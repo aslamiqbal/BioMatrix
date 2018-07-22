@@ -3,3 +3,8 @@
 ################################################################################
 
 *.suo
+/.vs
+/BioMetrixCore/bin/Debug
+/BioMetrixCore/obj
+*.config
+/BioMetrixCore/BioMetrixCore.csproj.user

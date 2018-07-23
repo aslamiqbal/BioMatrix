@@ -296,30 +296,33 @@ namespace BioMetrixCore
 
         private void backgroundWorkerSendToMainDB_DoWork(object sender, DoWorkEventArgs e)
         {
-
-            var dt = "2018-06-29";// DateTime.Now.ToString("yyyy-MM-dd");
-            var q1 = $"SELECT [Id],[DeviceID],[SerialNumber],[UserID],[LogTime],[IsSent] FROM [Attn_tblZKMaster] where IsSent=0 and  cast(LogTime as date)='{dt}' order by id";
-            var Attn_tblZKMasterList= DBAccess.Sql.GetObjectCollection<Attn_tblZKMaster>(q1,true);
-            foreach (Attn_tblZKMaster Attn_tblZKMaster in Attn_tblZKMasterList)
+            using (var Sql = DBAccess.Sql)
+            using (var SqlMainDB = DBAccess.SqlMainDB)
             {
-                var zm = Attn_tblZKMaster;
-                q1 = $"SELECT [ID],[UserID],[AttnDate],[InTime],[OutTime],[DeviceID],[Device_UserID],[IsFromDevice] FROM [Attn_tblAttendance]  where DeviceID='{Attn_tblZKMaster.DeviceID}' and Device_UserID={Attn_tblZKMaster.UserID} and AttnDate='{dt}'";
-                var ds = DBAccess.SqlMainDB.ExecuteDataSet(q1, "tab1");
-                if (ds.Tables[0].Rows.Count > 0)//already inserted for today
-                {//row exist, update out time only
-                    //DBAccess.SqlMainDB use this for main db. main db=school's db
-                    q1 = $"UPDATE [Attn_tblAttendance]  SET [OutTime] = '{Attn_tblZKMaster.LogTime}' WHERE ID = {ds.Tables[0].Rows[0]["ID"].ToString()}";
-                    DBAccess.SqlMainDB.Execute(q1);
-
-                }
-                else//no data,so, insert
+                var dt = "2018-06-29";// DateTime.Now.ToString("yyyy-MM-dd");
+                var q1 = $"SELECT [Id],[DeviceID],[SerialNumber],[UserID],[LogTime],[IsSent] FROM [Attn_tblZKMaster] where IsSent=0 and  cast(LogTime as date)='{dt}' order by id";
+                var Attn_tblZKMasterList = Sql.GetObjectCollection<Attn_tblZKMaster>(q1, true);
+                foreach (Attn_tblZKMaster Attn_tblZKMaster in Attn_tblZKMasterList)
                 {
+                    var zm = Attn_tblZKMaster;
+                    q1 = $"SELECT [ID],[UserID],[AttnDate],[InTime],[OutTime],[DeviceID],[Device_UserID],[IsFromDevice] FROM [Attn_tblAttendance]  where DeviceID='{Attn_tblZKMaster.DeviceID}' and Device_UserID={Attn_tblZKMaster.UserID} and AttnDate='{dt}'";
+                    var ds = SqlMainDB.ExecuteDataSet(q1, "tab1");
+                    if (ds.Tables[0].Rows.Count > 0)//already inserted for today
+                    {//row exist, update out time only
+                     //DBAccess.SqlMainDB use this for main db. main db=school's db
+                        q1 = $"UPDATE [Attn_tblAttendance]  SET [OutTime] = '{Attn_tblZKMaster.LogTime}' WHERE ID = {ds.Tables[0].Rows[0]["ID"].ToString()}";
+                        SqlMainDB.Execute(q1);
 
-                    
-                    q1 = $"INSERT INTO [Attn_tblAttendance]([UserID],[IsPresent],[IsAbsent],[AttnDate],     [InTime],     [OutTime],[DeviceID] ,[Device_UserID],[IsFromDevice] ,[IsSMSSent] ,[AddBy] ,[AddTime])"+
-                                                    $"VALUES('{zm.UserID}',1,0,'{zm.LogTime.Date}','{zm.LogTime}',NULL,'{zm.DeviceID}','{zm.UserID}'                ,1,               0,   'device', '{DateTime.Now.ToString()}')";
-                    DBAccess.SqlMainDB.Execute(q1);
+                    }
+                    else//no data,so, insert
+                    {
 
+
+                        q1 = $"INSERT INTO [Attn_tblAttendance]([UserID],[IsPresent],[IsAbsent],[AttnDate],     [InTime],     [OutTime],[DeviceID] ,[Device_UserID],[IsFromDevice] ,[IsSMSSent] ,[AddBy] ,[AddTime])" +
+                                                        $"VALUES('{zm.UserID}',1,0,'{zm.LogTime.Date}','{zm.LogTime}',NULL,'{zm.DeviceID}','{zm.UserID}'                ,1,               0,   'device', '{DateTime.Now.ToString()}')";
+                        SqlMainDB.Execute(q1);
+
+                    }
                 }
             }
         }

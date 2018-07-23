@@ -22,12 +22,18 @@ namespace BioMetrixCore.Utilities
         public static MsSql Sql { get {
                 return new MsSql(connectionstring);
             } }
+       
         public static MsSql SqlMainDB
         {
             get
             {
                 return new MsSql(connectionstringMainDB);
             }
+        }
+        public static void CloseConnection(MsSql msSql)
+        {
+            msSql.Close();
+            msSql.Dispose();
         }
     }
 }
